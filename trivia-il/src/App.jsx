@@ -6,6 +6,7 @@ function App() {
   const [gameState, setGameState] = useState('start');
   // State to track the current question index
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+   const [count, setCount] = useState(0)
   // State to track the user's score
   const [score, setScore] = useState(0);
 
@@ -17,6 +18,7 @@ function App() {
   const startGame = () => {
     setGameState('playing');
     setCurrentQuestionIndex(0); 
+    setCount(0);
     // Reset score when a new game starts
     setScore(0);
     // Reset waiting states in case of a restart
@@ -25,6 +27,9 @@ function App() {
   };
 
   const currentQuestion = triviaQuestions[currentQuestionIndex];
+  const getNextQuestionIndex=()=>{
+    return Math.floor(Math.random() * triviaQuestions.length);
+  }
 
   const handleAnswerClick = (selectedOption) => {
     // Prevent multiple clicks
@@ -40,10 +45,10 @@ function App() {
 
     setTimeout(() => {
       // Calculate the index for the next question
-      const nextQuestion = currentQuestionIndex + 1;
-
+      const nextQuestion = getNextQuestionIndex();
+      setCount(count + 1);
       // Check if there are more questions left
-      if (nextQuestion < triviaQuestions.length) {
+      if (count < 25) {
         setCurrentQuestionIndex(nextQuestion);
       } else {
         // End the game if no questions are left
