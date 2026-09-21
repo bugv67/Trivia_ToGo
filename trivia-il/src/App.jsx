@@ -17,8 +17,8 @@ function App() {
 
   const startGame = () => {
     setGameState('playing');
-    setCurrentQuestionIndex(0); 
-    setCount(0);
+    setCurrentQuestionIndex(getNextQuestionIndex()); 
+    setCount(1);
     // Reset score when a new game starts
     setScore(0);
     // Reset waiting states in case of a restart
@@ -44,21 +44,18 @@ function App() {
     }
 
     setTimeout(() => {
-      // Calculate the index for the next question
-      const nextQuestion = getNextQuestionIndex();
-      setCount(count + 1);
-      // Check if there are more questions left
-      if (count < 25) {
-        setCurrentQuestionIndex(nextQuestion);
-      } else {
-        // End the game if no questions are left
-        setGameState('end');
-      }
-      
-      // Reset the waiting states for the next question
-      setSelectedAnswer(null);
-      setIsWaiting(false);
-    }, 2000);
+  const nextQuestion = getNextQuestionIndex();
+
+  if (count < 25) {
+    setCount(count + 1); 
+    setCurrentQuestionIndex(nextQuestion); 
+  } else {
+    setGameState('end');
+  }
+
+  setSelectedAnswer(null);
+  setIsWaiting(false);
+}, 2000);
   };
 
   const handleColor = (option) => {
@@ -103,9 +100,9 @@ function App() {
       {/* Playing Screen */}
       {gameState === 'playing' && (
         <div className="text-center bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-          <p className="text-sm text-gray-500 mb-2">
-            שאלה {count + 1} מתוך {25}
-          </p>
+        <p className="text-sm text-gray-500 mb-2">
+  שאלה {count} מתוך 25
+</p>
           
           <h2 className="text-xl font-bold mb-6 text-gray-800">
             {currentQuestion.question}
@@ -131,7 +128,7 @@ function App() {
         <div className="text-center bg-white p-8 rounded-xl shadow-md w-full max-w-md">
           <h2 className="text-2xl font-bold text-green-600 mb-4">המשחק הסתיים</h2>
           <p className="text-gray-800 font-medium mb-8">
-            ענית נכון על {score} מתוך {triviaQuestions.length} שאלות!
+            ענית נכון על {score} מתוך 25 שאלות!
           </p>
           <button 
             onClick={startGame}
