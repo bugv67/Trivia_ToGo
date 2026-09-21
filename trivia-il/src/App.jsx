@@ -104,7 +104,7 @@ function App() {
       {gameState === 'playing' && (
         <div className="text-center bg-white p-8 rounded-xl shadow-md w-full max-w-md">
           <p className="text-sm text-gray-500 mb-2">
-            שאלה {currentQuestionIndex + 1} מתוך {triviaQuestions.length}
+            שאלה {count + 1} מתוך {25}
           </p>
           
           <h2 className="text-xl font-bold mb-6 text-gray-800">
