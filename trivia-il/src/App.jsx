@@ -1,19 +1,54 @@
-import React, { useState } from 'react';
-import { triviaQuestions } from './questions';
+import React, { useState, useEffect } from 'react';
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "./firebase";
+import { triviaQuestions } from './questions'; // Fallback local data
 
 function App() {
   // State to manage the current screen ('start', 'playing', 'end')
   const [gameState, setGameState] = useState('start');
-  // State to track the current question index
+  
+  // State to track the current question index and count
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-   const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
+  
   // State to track the user's score
   const [score, setScore] = useState(0);
 
-  // State to track the specific answer the user clicked
+  // States to manage user selection and button locking during delay
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  // State to lock the buttons and trigger colors during the delay
   const [isWaiting, setIsWaiting] = useState(false);
+
+  // States for  data fetching
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch questions once when the app loads
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "questions"));
+        const fetchedData = querySnapshot.docs.map(doc => doc.data());
+        
+        // Trigger fallback if the database returns an empty array
+        if (fetchedData.length === 0) throw new Error("No data found in Firebase");
+        
+        setQuestions(fetchedData); 
+        setIsLoading(false); 
+      } catch (error) {
+        console.error("Error fetching from Firebase, loading local fallback:", error);
+        // Fallback to local questions file
+        setQuestions(triviaQuestions);
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
+
+  const getNextQuestionIndex = () => {
+    // Generate a random index based on the actual loaded questions array
+    return Math.floor(Math.random() * questions.length);
+  };
 
   const startGame = () => {
     setGameState('playing');
@@ -26,10 +61,8 @@ function App() {
     setIsWaiting(false);
   };
 
-  const currentQuestion = triviaQuestions[currentQuestionIndex];
-  const getNextQuestionIndex=()=>{
-    return Math.floor(Math.random() * triviaQuestions.length);
-  }
+  // Get the current question from the state
+  const currentQuestion = questions[currentQuestionIndex];
 
   const handleAnswerClick = (selectedOption) => {
     // Prevent multiple clicks
@@ -44,18 +77,19 @@ function App() {
     }
 
     setTimeout(() => {
-  const nextQuestion = getNextQuestionIndex();
+      const nextQuestion = getNextQuestionIndex();
 
-  if (count < 25) {
-    setCount(count + 1); 
-    setCurrentQuestionIndex(nextQuestion); 
-  } else {
-    setGameState('end');
-  }
+      // Check if we haven't reached 25 questions yet
+      if (count < 25) {
+        setCount(count + 1); 
+        setCurrentQuestionIndex(nextQuestion); 
+      } else {
+        setGameState('end');
+      }
 
-  setSelectedAnswer(null);
-  setIsWaiting(false);
-}, 2000);
+      setSelectedAnswer(null);
+      setIsWaiting(false);
+    }, 2000);
   };
 
   const handleColor = (option) => {
@@ -76,10 +110,19 @@ function App() {
       return baseClass + "bg-gray-50 border-gray-200 text-gray-400 opacity-50"; 
     }
 
-    //Default state 
+    // Default state 
     return baseClass + "bg-gray-50 hover:bg-blue-50 border-gray-200 text-gray-700";
   };
 
+  // Render loading screen if data is still being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4" dir="rtl">
+        <h2 className="text-2xl font-bold text-gray-700">Loading questions...</h2>
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4" dir="rtl">
       
@@ -100,9 +143,9 @@ function App() {
       {/* Playing Screen */}
       {gameState === 'playing' && (
         <div className="text-center bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-        <p className="text-sm text-gray-500 mb-2">
-  שאלה {count} מתוך 25
-</p>
+          <p className="text-sm text-gray-500 mb-2">
+            שאלה {count} מתוך 25
+          </p>
           
           <h2 className="text-xl font-bold mb-6 text-gray-800">
             {currentQuestion.question}
