@@ -29,6 +29,21 @@ function App() {
   const [isScoreSaved, setIsScoreSaved] = useState(false);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false); // Tracks leaderboard fetch status
 
+  const uploadQuestionsToFirebase = async () => {
+  console.log("מתחיל להעלות שאלות, נא להמתין...");
+  try {
+    for (const q of triviaQuestions) {
+      await addDoc(collection(db, "questions"), {
+        question: q.question,
+        options: q.options,
+        correctAnswer: q.correctAnswer
+      });
+    }
+    alert("כל השאלות הועלו לפיירבייס בהצלחה!");
+  } catch (error) {
+    console.error("שגיאה בהעלאה: ", error);
+  }
+};
   // Fetch questions once when the app loads
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -194,6 +209,12 @@ function App() {
           >
             התחל משחק
           </button>
+          <button
+  onClick={uploadQuestionsToFirebase}
+  className="w-full mt-4 bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-lg"
+>
+  העלת שאלות לפיירבייס 
+</button>
         </div>
       )}
 
