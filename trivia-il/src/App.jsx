@@ -22,6 +22,13 @@ function App() {
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // מעקב אחרי השם שהמשתמש מקליד
+  const [playerName, setPlayerName] = useState('');
+  // שמירת נתוני טבלת המובילים מהשרת
+  const [leaderboard, setLeaderboard] = useState([]);
+  // חסימת כפתור השמירה אחרי לחיצה כדי למנוע שמירות כפולות
+  const [isScoreSaved, setIsScoreSaved] = useState(false);
+
   // Fetch questions once when the app loads
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -59,6 +66,8 @@ function App() {
     // Reset waiting states in case of a restart
     setSelectedAnswer(null);
     setIsWaiting(false);
+    setPlayerName('');
+    setIsScoreSaved(false);
   };
 
   // Get the current question from the state
