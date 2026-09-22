@@ -215,7 +215,7 @@ function App() {
                 onClick={() => handleAnswerClick(option)}
                 disabled={isWaiting}
                 className={handleColor(option)}
-              >
+               >
                 {option}
               </button>
             ))}
@@ -223,7 +223,7 @@ function App() {
         </div>
       )}
 
-      {/* End Screen */}
+      {/* End Scree n */}
       {gameState === 'end' && (
         <div className="text-center bg-white p-8 rounded-xl shadow-md w-full max-w-md">
           <h2 className="text-2xl font-bold text-green-600 mb-4">המשחק הסתיים</h2>
