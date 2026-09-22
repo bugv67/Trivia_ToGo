@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs } from "firebase/firestore";
+// Added missing addDoc, and query functions (query, orderBy, limit) for the top 5 leaderboard
+import { collection, getDocs, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { db } from "./firebase";
 import { triviaQuestions } from './questions'; // Fallback local data
 
@@ -18,16 +19,15 @@ function App() {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isWaiting, setIsWaiting] = useState(false);
 
-  // States for  data fetching
+  // States for data fetching (Questions)
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // מעקב אחרי השם שהמשתמש מקליד
+  // States for Leaderboard management
   const [playerName, setPlayerName] = useState('');
-  // שמירת נתוני טבלת המובילים מהשרת
   const [leaderboard, setLeaderboard] = useState([]);
-  // חסימת כפתור השמירה אחרי לחיצה כדי למנוע שמירות כפולות
   const [isScoreSaved, setIsScoreSaved] = useState(false);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false); // Tracks leaderboard fetch status
 
   // Fetch questions once when the app loads
   useEffect(() => {
@@ -52,20 +52,68 @@ function App() {
     fetchQuestions();
   }, []);
 
+  // Fetch Top 5 scores from Firestore
+  const fetchTopScores = async () => {
+    setIsLeaderboardLoading(true);
+    try {
+      const leaderboardRef = collection(db, "leaderboard");
+      // Query to get the top 5 scores in descending order
+      const q = query(leaderboardRef, orderBy("score", "desc"), limit(5));
+      const querySnapshot = await getDocs(q);
+      
+      const data = querySnapshot.docs.map(doc => doc.data());
+      setLeaderboard(data);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+    } finally {
+      setIsLeaderboardLoading(false);
+    }
+  };
+
+  // Automatically fetch leaderboard data when the game ends
+  useEffect(() => {
+    if (gameState === 'end') {
+      fetchTopScores();
+    }
+  }, [gameState]);
+
   const getNextQuestionIndex = () => {
     // Generate a random index based on the actual loaded questions array
     return Math.floor(Math.random() * questions.length);
+  };
+
+  const saveScoreToLeaderboard = async () => {
+    // Prevent double saving or saving without a name
+    if (!playerName.trim() || isScoreSaved) return;
+
+    try {
+      // Create a new document in the "leaderboard" collection
+      await addDoc(collection(db, "leaderboard"), {
+        name: playerName,
+        score: score,
+        date: new Date().toISOString() // Saves current timestamp
+      });
+      
+      setIsScoreSaved(true); 
+      
+      // Re-fetch the leaderboard to instantly show the newly saved score if it made the Top 5
+      fetchTopScores();
+    } catch (error) {
+      console.error("Error saving score:", error);
+    }
   };
 
   const startGame = () => {
     setGameState('playing');
     setCurrentQuestionIndex(getNextQuestionIndex()); 
     setCount(1);
-    // Reset score when a new game starts
+    
+    // Reset score and waiting states when a new game starts
     setScore(0);
-    // Reset waiting states in case of a restart
     setSelectedAnswer(null);
     setIsWaiting(false);
+    
+    // Reset leaderboard input states
     setPlayerName('');
     setIsScoreSaved(false);
   };
@@ -179,9 +227,63 @@ function App() {
       {gameState === 'end' && (
         <div className="text-center bg-white p-8 rounded-xl shadow-md w-full max-w-md">
           <h2 className="text-2xl font-bold text-green-600 mb-4">המשחק הסתיים</h2>
-          <p className="text-gray-800 font-medium mb-8">
+          <p className="text-gray-800 font-medium mb-6">
             ענית נכון על {score} מתוך 25 שאלות!
           </p>
+
+          {/* Leaderboard Score Saving Section */}
+          {!isScoreSaved ? (
+            <div className="mb-8 flex flex-col gap-3">
+              <input
+                type="text"
+                placeholder="הכניסי את שמך..."
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                maxLength={15}
+                className="w-full border border-gray-300 rounded-lg py-3 px-4 text-right focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={saveScoreToLeaderboard}
+                disabled={!playerName.trim()}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
+              >
+                שמרי תוצאה בטבלת המובילים
+              </button>
+            </div>
+          ) : (
+            <p className="text-green-600 font-bold mb-8">התוצאה נשמרה בהצלחה!</p>
+          )}
+
+          {/* Top 5 Leaderboard Display */}
+          <div className="mb-8 border-t pt-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">🏆 טופ 5 מובילים</h3>
+            
+            {isLeaderboardLoading ? (
+              <p className="text-gray-500">טוען נתונים...</p>
+            ) : leaderboard.length > 0 ? (
+              <table className="w-full text-right bg-gray-50 rounded-lg overflow-hidden shadow-sm">
+                <thead className="bg-blue-100 text-blue-800">
+                  <tr>
+                    <th className="py-2 px-4 font-semibold">מקום</th>
+                    <th className="py-2 px-4 font-semibold">שם</th>
+                    <th className="py-2 px-4 font-semibold text-left">ניקוד</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((entry, index) => (
+                    <tr key={index} className="border-b border-gray-200 last:border-0">
+                      <td className="py-2 px-4 text-gray-600 font-medium">{index + 1}</td>
+                      <td className="py-2 px-4 text-gray-800">{entry.name}</td>
+                      <td className="py-2 px-4 text-blue-600 font-bold text-left">{entry.score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-gray-500">עדיין אין מובילים. היי הראשונה לשמור תוצאה!</p>
+            )}
+          </div>
+
           <button 
             onClick={startGame}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
