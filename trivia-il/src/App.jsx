@@ -77,11 +77,6 @@ const [activeQuestions, setActiveQuestions] = useState([]);
     }
   }, [gameState]);
 
-  const getNextQuestionIndex = () => {
-    // Generate a random index based on the actual loaded questions array
-    return Math.floor(Math.random() * questions.length);
-  };
-
   const saveScoreToLeaderboard = async () => {
     // Prevent double saving or saving without a name
     if (!playerName.trim() || isScoreSaved) return;
@@ -110,7 +105,7 @@ const shuffleArray = (array) => {
     setGameState('playing');
     const mixedQuestions = shuffleArray(questions).slice(0, 25);
   setActiveQuestions(mixedQuestions);
-    setCurrentQuestionIndex(getNextQuestionIndex()); 
+    setCurrentQuestionIndex(0); 
     setCount(1);
     
     // Reset score and waiting states when a new game starts
