@@ -28,7 +28,7 @@ function App() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [isScoreSaved, setIsScoreSaved] = useState(false);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false); // Tracks leaderboard fetch status
-
+const [activeQuestions, setActiveQuestions] = useState([]);
   // Fetch questions once when the app loads
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -102,9 +102,14 @@ function App() {
       console.error("Error saving score:", error);
     }
   };
-
+const shuffleArray = (array) => {
+  return [...array].sort(() => Math.random() - 0.5);
+};
   const startGame = () => {
+
     setGameState('playing');
+    const mixedQuestions = shuffleArray(questions).slice(0, 25);
+  setActiveQuestions(mixedQuestions);
     setCurrentQuestionIndex(getNextQuestionIndex()); 
     setCount(1);
     
@@ -119,7 +124,7 @@ function App() {
   };
 
   // Get the current question from the state
-  const currentQuestion = questions[currentQuestionIndex];
+ const currentQuestion = activeQuestions[currentQuestionIndex];
 
   const handleAnswerClick = (selectedOption) => {
     // Prevent multiple clicks
@@ -134,7 +139,7 @@ function App() {
     }
 
     setTimeout(() => {
-      const nextQuestion = getNextQuestionIndex();
+     const nextQuestion = currentQuestionIndex + 1;
 
       // Check if we haven't reached 25 questions yet
       if (count < 25) {
@@ -168,7 +173,7 @@ function App() {
     }
 
     // Default state 
-    return baseClass + "bg-gray-50 hover:bg-blue-50 border-gray-200 text-gray-700";
+return baseClass + "bg-gray-50 active:bg-gray-200 border-gray-200 text-gray-700";
   };
 
   // Render loading screen if data is still being fetched
